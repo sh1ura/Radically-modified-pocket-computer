@@ -4,6 +4,8 @@
 
 1988年のポケットコンピュータ（ポケコン） SHARP PC-G801 を改造し、キーボードとディスプレイがついた Linux マシン化しました。
 
+制作過程等は[こちら](https://shiura.com/dfab/sharp-mod/index.html)をごらんください。
+
 ## 概要
 
 * Raspberry Pi Zero 2 W を内蔵
