@@ -21,6 +21,10 @@ KiCad でデザインしたPCBのデータを公開します。
 
 ## 搭載・使用する部品
 
+![wirings](https://github.com/user-attachments/assets/aa84326e-32b0-4eaa-aca3-168ca877021b)
+![heights](https://github.com/user-attachments/assets/e5b81389-7044-4068-a376-afc29bb5e68a)
+
+
 ### この PCB に搭載される部品
 
 * ESP32-S3 搭載ボード
@@ -52,4 +56,14 @@ KiCad でデザインしたPCBのデータを公開します。
   - 強力両面テープで貼り付けてあるだけです。
   - このカスタム PCB の power2 のパッドから電源供給します。
   - Ｌ字ピンヘッダで電源供給していましたが、配線抵抗による電圧降下があったため、別途太めの電線で電源を引きました。
-    
+
+## 配線
+
+以下では、電源については記載されていません。
+
+* ESP32 には、PCB 上で GND と 5V に配線されています。
+* ディスプレイには、SPI のほか、電源端子へ ESP32 の 3V3 出力を配線しています。SPI のピン配置はソースコードで確認してください。
+* Raspberry Pi Zero 2 W には、 PCB 上の power2 のパッドから 5V へ配線しています。もちろん GND の配線も必要です。
+* UART は、それぞれの TX 出力を、相手側の RX へ接続してください。
+
+![fig2](https://github.com/user-attachments/assets/5f4b2775-e105-4bfe-a333-35ebf184e4db)
