@@ -4,7 +4,6 @@ KiCad でデザインしたPCBのデータを公開します。
 
 ![ki2](https://github.com/user-attachments/assets/2601b8d6-2a19-42c4-8434-f2a83632255b)
 
-
 ## 設計手順
 
 1. キーマトリクスの配置を検討（9x10=19本のGPIOで読み取り）
@@ -12,6 +11,9 @@ KiCad でデザインしたPCBのデータを公開します。
 3. キーボードの導電ゴム接点をフットプリントエディタで作成
 4. オリジナルの基板をスキャン
 5. 画像に合わせてフットプリントを配置
+
+![ki1](https://github.com/user-attachments/assets/d8137099-9a85-43da-9056-e058721a7131)
+
 
 ## 作成結果(JLCPCB発注）
 
