@@ -19,6 +19,11 @@
 
 [![pockecom](https://github.com/user-attachments/assets/01cd19e7-72fa-4902-9953-ad860ec31da8)](https://youtu.be/T_GSy2BSDts)
 
+### 回路・部品構成
+
+![design](https://github.com/user-attachments/assets/cc3e37bd-570f-45a6-8252-1ceb3eaf2b97)
+
+
  ## 提供物
 
  * 改造用の PCB （基板）のデータ
