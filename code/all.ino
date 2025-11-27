@@ -317,11 +317,27 @@ void escProcess(String str) { // process escape sequence
         }
       }
       break;
+    case '@':
+      for(int j = TEXT_WIDTH - num - 1; j >= cursorX; j--) {
+        textBuf[cursorY][j + num] = textBuf[cursorY][j];
+      }
+      for(int j = cursorX; j < cursorX + num; j++) {
+        if(j >= TEXT_WIDTH)
+          break;
+        textBuf[cursorY][j] = ' ';
+      }
+      break;
+    case 'P':
+      for(int j = cursorX; j < TEXT_WIDTH; j++) {
+        textBuf[cursorY][j] = (j + num < TEXT_WIDTH) ? textBuf[cursorY][j + num] : ' ';
+      }
+      break;
     }
   }
 }
 
 #define PROCESS_ESC 1
+#define DEBUG_ESC 0
 
 void showChar(char c) {
   static boolean esc;
@@ -330,12 +346,18 @@ void showChar(char c) {
   if(!c)
     return;
 
+#if DEBUG_ESC
+  char c2[2] = " ";
+  c2[0] = c;
+  Serial.print(c2);
+#endif
+
 #if PROCESS_ESC
   if(esc) {
     char c2[2] = " ";
     c2[0] = c;
     escStr += c2;
-    if(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')) { // escape sequence end
+    if(c != '[' && (0x40 <= c && c <= 0x7f)) { // escape sequence end
       esc = false;
       escProcess(escStr);
     }
@@ -842,6 +864,9 @@ void loopESP32() {
 
 void setup() {
   Serial2.begin(115200, SERIAL_8N1, 47, 48);
+#if DEBUG_ESC
+  Serial.begin(115200);
+#endif
 
   SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_SS); 
   u8g2.begin();
