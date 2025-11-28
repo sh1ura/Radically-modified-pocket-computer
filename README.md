@@ -1,6 +1,6 @@
 # ポケコン Linux 化改造
 
-![appearances](https://github.com/user-attachments/assets/f205425d-3159-477d-a48a-aa2f1cca759d)
+![appearances](https://github.com/user-attachments/assets/4799278b-5afe-4ecb-b594-a3569754d43f)
 
 1988年のポケットコンピュータ（ポケコン） SHARP PC-G801 を改造し、キーボードとディスプレイがついた Linux マシン化しました。
 
