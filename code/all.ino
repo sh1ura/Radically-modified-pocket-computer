@@ -89,14 +89,16 @@ struct KeyPos {
 U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/40, /* dc=*/42, /* reset=*/41);  // Enable U8G2_16BIT in u8g2.h
 #define DISP_WIDTH 256
 #define DISP_HEIGHT 64
-#define FONT u8g2_font_6x10_mf
+//#define FONT_TERM u8g2_font_mozart_nbp_tr
+#define FONT_TERM u8g2_font_6x10_mf
+#define FONT_CALC u8g2_font_6x13_mf
+#define FONT_TERM_HEIGHT 9
+#define FONT_CALC_HEIGHT 12
 #define FONT_WIDTH 6
-#define FONT_HEIGHT 9
-//#define FONT u8g2_font_5x7_mf
-//#define FONT_WIDTH 5
-//#define FONT_HEIGHT 7
+int fontHeight = FONT_TERM_HEIGHT;
+
 #define TEXT_WIDTH (DISP_WIDTH / FONT_WIDTH)
-#define TEXT_HEIGHT (DISP_HEIGHT / FONT_HEIGHT)
+#define TEXT_HEIGHT (DISP_HEIGHT / fontHeight)
 
 #define HISTORY_LINES 100  // rows of history area
 
@@ -174,14 +176,14 @@ void refleshDisplay(void) {
   u8g2.clearBuffer();
   for (int j = 0; j < TEXT_HEIGHT; j++) {
     showBuf[j][TEXT_WIDTH] = '\0';
-    u8g2.drawStr(0, (j + 1) * FONT_HEIGHT - 1, showBuf[j]);
+    u8g2.drawStr(0, (j + 1) * fontHeight - 1, showBuf[j]);
   }
 
   if (!cursorOff && dispLine == HISTORY_LINES - TEXT_HEIGHT) {  // show cursor
     u8g2.setFontMode(0);
     u8g2.setDrawColor(0);
     c2[0] = showBuf[cursorY][cursorX];
-    u8g2.drawStr(FONT_WIDTH * cursorX, (cursorY + 1) * FONT_HEIGHT - 1, c2);
+    u8g2.drawStr(FONT_WIDTH * cursorX, (cursorY + 1) * fontHeight - 1, c2);
     u8g2.setFontMode(1);
     u8g2.setDrawColor(1);
   }
@@ -544,7 +546,7 @@ void update_display(void) {
       s[0] = VARIABLE_LETTER + i;
       s = s + fp64_to_string_wrap(memory[i]);
       cursorX = MAX_DIGIT + 3;
-      cursorY = i + 2;
+      cursorY = i + 1;
       showString(s.c_str());
     }
   }
@@ -861,7 +863,6 @@ void setup() {
 
   SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_SS);
   u8g2.begin();
-  u8g2.setFont(FONT);  // choose a suitable font
   u8g2.setFontMode(1);
   u8g2.setDrawColor(1);
 
@@ -882,9 +883,13 @@ void setup() {
   delay(100);
   rpiMode = digitalRead(MODE_SENSE);
   if (rpiMode) {  // RPi powered on
+    u8g2.setFont(FONT_TERM);  // choose a suitable font
+    fontHeight = FONT_TERM_HEIGHT;
     showString("Raspberry Pi OS mode\n");
     refleshDisplay();
   } else {
+    u8g2.setFont(FONT_CALC);  // choose a suitable font
+    fontHeight = FONT_CALC_HEIGHT;
     update_display();
   }
 }
