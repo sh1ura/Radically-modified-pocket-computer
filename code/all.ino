@@ -91,7 +91,7 @@ U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 40, /* dc=*/ 42, /* r
 #define DISP_HEIGHT 64
 #define FONT u8g2_font_6x10_mf
 #define FONT_WIDTH 6
-#define FONT_HEIGHT 10
+#define FONT_HEIGHT 9
 //#define FONT u8g2_font_5x7_mf
 //#define FONT_WIDTH 5
 //#define FONT_HEIGHT 7
@@ -181,9 +181,11 @@ void refleshDisplay(void) {
   }
 
   if(dispLine == HISTORY_LINES - TEXT_HEIGHT) { // not showing history
+    u8g2.setFontMode(0);
     u8g2.setDrawColor(0);
     c2[0] = showBuf[cursorY][cursorX];
     u8g2.drawStr(FONT_WIDTH * cursorX, (cursorY + 1) * FONT_HEIGHT - 1, c2);
+    u8g2.setFontMode(1);
     u8g2.setDrawColor(1);
   }
 
@@ -545,13 +547,15 @@ void update_display(void) {
       s[0] = VARIABLE_LETTER + i;
       s = s + fp64_to_string_wrap(memory[i]);
       cursorX = MAX_DIGIT + 3;
-      cursorY = i + 1;
+      cursorY = i + 2;
       showString(s.c_str());
     }
   }
   for(int i = 0; i < TEXT_HEIGHT; i++) {
     String s = " ";
     s[0] = 'F' - i;
+    if(s[0] < 'A')
+      s[0] = ' ';
     s = s + fp64_to_string_wrap(stack[i]);
     cursorX = 0;
     cursorY = TEXT_HEIGHT - 1 - i;
@@ -845,13 +849,13 @@ void loopESP32() {
     case 'X':
     case 'Y':
     case 'Z':
-      memory[key - 'X'] = stack[0];
+      memory[key - VARIABLE_LETTER] = stack[0];
       break;
     case 'x':
     case 'y':
     case 'z':
       backup();
-      push(memory[key - 'x']);
+      push(memory[key - 'a' + 'A' - VARIABLE_LETTER]);
       break;
     }
   }
@@ -871,7 +875,7 @@ void setup() {
   SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_SS); 
   u8g2.begin();
   u8g2.setFont(FONT);	// choose a suitable font
-  u8g2.setFontMode(0);
+  u8g2.setFontMode(1);
   u8g2.setDrawColor(1);
 
   for(int i = 0; i < TEXT_HEIGHT; i++) {
