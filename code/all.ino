@@ -157,6 +157,13 @@ char keyChar(struct KeyPos key) {
   return c;
 }
 
+void waitRelease(void) {
+  struct KeyPos keyRaw;
+  do {
+    keyRaw = keyCheck();
+  } while (keyRaw.row >= 0);
+}
+
 //////////////////
 // display funcs
 //////////////////
@@ -438,6 +445,12 @@ void loopRpi() {
     delay(50);
     return;
   }
+  else if (key.row == 9 && key.clm == 8) { // CLS key
+    char c3[100];
+    sprintf(c3, "stty rows %d cols %d; clear", TEXT_HEIGHT, TEXT_WIDTH - 1);
+    Serial2.print(c3);
+    waitRelease();
+  }
   c = keyChar(key);
   if (c == 0) {
     return;
@@ -604,13 +617,6 @@ void enter(void) {
     push(atof((char *)enteringStr.c_str()));
     enteringStr = "";
   }
-}
-
-void waitRelease(void) {
-  struct KeyPos keyRaw;
-  do {
-    keyRaw = keyCheck();
-  } while (keyRaw.row >= 0);
 }
 
 void loopESP32() {
