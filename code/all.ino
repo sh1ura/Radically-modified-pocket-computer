@@ -90,7 +90,8 @@ U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/40, /* dc=*/42, /* res
 #define DISP_WIDTH 256
 #define DISP_HEIGHT 64
 //#define FONT_TERM u8g2_font_mozart_nbp_tr
-#define FONT_TERM u8g2_font_6x10_mf
+//#define FONT_TERM u8g2_font_6x10_mf
+#define FONT_TERM u8g2_font_b12_t_japanese3 // with kanji
 #define FONT_CALC u8g2_font_6x13_mf
 #define FONT_TERM_HEIGHT 9
 #define FONT_CALC_HEIGHT 12
@@ -176,6 +177,14 @@ int dispLine = HISTORY_LINES - TEXT_HEIGHT;
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
+void resetDisplaySetting(void) {
+  textBuf = &(historyBuf[HISTORY_LINES - TEXT_HEIGHT]);
+  dispLine = HISTORY_LINES - TEXT_HEIGHT;
+  cursorX = 0;
+  cursorY = 0;
+  cursorOff = false;
+}
+
 void refleshDisplay(void) {
   char c2[2] = " ";
 
@@ -183,15 +192,15 @@ void refleshDisplay(void) {
   u8g2.clearBuffer();
   for (int j = 0; j < TEXT_HEIGHT; j++) {
     showBuf[j][TEXT_WIDTH] = '\0';
-    u8g2.drawStr(0, (j + 1) * fontHeight - 1, showBuf[j]);
+    // u8g2.drawStr(0, (j + 1) * fontHeight - 1, showBuf[j]);
+    u8g2.setCursor(0, (j + 1) * fontHeight - 1);
+    u8g2.print(showBuf[j]); // ready for UTF8
   }
 
   if (!cursorOff && dispLine == HISTORY_LINES - TEXT_HEIGHT) {  // show cursor
-    u8g2.setFontMode(0);
-    u8g2.setDrawColor(0);
-    c2[0] = showBuf[cursorY][cursorX];
-    u8g2.drawStr(FONT_WIDTH * cursorX, (cursorY + 1) * fontHeight - 1, c2);
-    u8g2.setFontMode(1);
+    u8g2.setDrawColor(2);  // xor
+    u8g2.drawBox(cursorX * FONT_WIDTH, cursorY * fontHeight,
+                 FONT_WIDTH, fontHeight);
     u8g2.setDrawColor(1);
   }
 
@@ -204,7 +213,7 @@ void showString(const char *s) {
   }
 }
 
-void scrollUp(void) { // scroll up including history area
+void scrollUp(void) {  // scroll up including history area
   for (int i = 0; i < HISTORY_LINES - 1; i++) {
     for (int j = 0; j < TEXT_WIDTH; j++) {
       historyBuf[i][j] = historyBuf[i + 1][j];
@@ -215,7 +224,7 @@ void scrollUp(void) { // scroll up including history area
   }
 }
 
-void scrollDown(void) { // scroll down of visible area only
+void scrollDown(void) {  // scroll down of visible area only
   for (int i = TEXT_HEIGHT - 1; i > 0; i--) {
     for (int j = 0; j < TEXT_WIDTH; j++) {
       textBuf[i - 1][j] = textBuf[i][j];
@@ -339,11 +348,11 @@ void escProcess(String str) {  // process escape sequence
         }
         break;
       case 'h':
-        if(str == "?25")
+        if (str == "?25")
           cursorOff = false;
         break;
       case 'l':
-        if(str == "?25")
+        if (str == "?25")
           cursorOff = true;
         break;
     }
@@ -444,8 +453,7 @@ void loopRpi() {
     refleshDisplay();
     delay(50);
     return;
-  }
-  else if (key.row == 9 && key.clm == 8) { // CLS key
+  } else if (key.row == 9 && key.clm == 8) {  // CLS key
     char c3[100];
     sprintf(c3, "stty rows %d cols %d; clear", TEXT_HEIGHT, TEXT_WIDTH - 1);
     Serial2.print(c3);
@@ -548,6 +556,7 @@ String enteringStr = "";
 void update_display(void) {
   int entlen = enteringStr.length();
 
+  resetDisplaySetting();
   dispClear();
   cursorX = MAX_DIGIT + 3;
   cursorY = 0;
@@ -869,6 +878,7 @@ void setup() {
 
   SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_SS);
   u8g2.begin();
+  u8g2.enableUTF8Print(); 
   u8g2.setFontMode(1);
   u8g2.setDrawColor(1);
 
@@ -888,14 +898,16 @@ void setup() {
   pinMode(MODE_SENSE, INPUT_PULLDOWN);
   delay(100);
   rpiMode = digitalRead(MODE_SENSE);
-  if (rpiMode) {  // RPi powered on
+  if (rpiMode) {              // RPi powered on
     u8g2.setFont(FONT_TERM);  // choose a suitable font
     fontHeight = FONT_TERM_HEIGHT;
+    resetDisplaySetting();
     showString("Raspberry Pi OS mode\n");
     refleshDisplay();
   } else {
     u8g2.setFont(FONT_CALC);  // choose a suitable font
     fontHeight = FONT_CALC_HEIGHT;
+    resetDisplaySetting();
     update_display();
   }
 }
