@@ -91,7 +91,7 @@ U8G2_SSD1322_NHD_256X64_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/40, /* dc=*/42, /* res
 #define DISP_HEIGHT 64
 //#define FONT_TERM u8g2_font_mozart_nbp_tr
 //#define FONT_TERM u8g2_font_6x10_mf
-#define FONT_TERM u8g2_font_b12_t_japanese3 // with kanji
+#define FONT_TERM u8g2_font_b12_t_japanese3  // with kanji
 #define FONT_CALC u8g2_font_6x13_mf
 #define FONT_TERM_HEIGHT 9
 #define FONT_CALC_HEIGHT 12
@@ -185,6 +185,11 @@ void resetDisplaySetting(void) {
   cursorOff = false;
 }
 
+void turnOffDisplay(void) {
+  u8g2.clearBuffer();
+  u8g2.sendBuffer();  // transfer internal memory to the display
+}
+
 void refleshDisplay(void) {
   char c2[2] = " ";
 
@@ -194,11 +199,11 @@ void refleshDisplay(void) {
     showBuf[j][TEXT_WIDTH] = '\0';
     // u8g2.drawStr(0, (j + 1) * fontHeight - 1, showBuf[j]);
     u8g2.setCursor(0, (j + 1) * fontHeight - 1);
-    u8g2.print(showBuf[j]); // ready for UTF8
+    u8g2.print(showBuf[j]);  // ready for UTF8
   }
 
   if (!cursorOff && dispLine == HISTORY_LINES - TEXT_HEIGHT) {  // show cursor
-    u8g2.setDrawColor(2);  // xor
+    u8g2.setDrawColor(2);                                       // xor
     u8g2.drawBox(cursorX * FONT_WIDTH, cursorY * fontHeight,
                  FONT_WIDTH, fontHeight);
     u8g2.setDrawColor(1);
@@ -432,6 +437,8 @@ void loopRpi() {
   char c;
   char c2[2] = " ";
   boolean dispFlag = false;
+  static unsigned long lastExec = millis(); // sleep timer
+  static boolean dispOff = false;
 
   while (Serial2.available()) {
     c = Serial2.read();
@@ -440,6 +447,8 @@ void loopRpi() {
   }
   if (dispFlag) {
     refleshDisplay();
+    dispOff = false;
+    lastExec = millis();
   }
 
   key = keyCheck();
@@ -461,7 +470,21 @@ void loopRpi() {
   }
   c = keyChar(key);
   if (c == 0) {
+    if(lastExec + 10000 < millis()) { // no operation for 10 sec
+      if (lastExec + 30000 < millis()) {  // for 30sec, turn off the display
+        if(!dispOff) {
+          turnOffDisplay();
+          dispOff = true;
+        }
+      }
+      esp_sleep_enable_timer_wakeup(300000);  // 0.3sec
+      esp_light_sleep_start();
+    }
     return;
+  }
+  if(dispOff) { // display turn on by hitting any key
+    refleshDisplay();
+    dispOff = false;
   }
   dispLine = HISTORY_LINES - TEXT_HEIGHT;  // reset display area
   if (c & 0x80) {                          // escape sequence
@@ -472,6 +495,7 @@ void loopRpi() {
     c2[0] = c;
     Serial2.print(c2);
   }
+  lastExec = millis();
 }
 
 //////////////////
@@ -530,12 +554,20 @@ void restore(void) {
 }
 
 void messageBox(String str) {
-  cursorX = MAX_DIGIT + 3;
-  cursorY = 0;
-  showString(str.c_str());
-  refleshDisplay();
-  delay(1000);
-  update_display();
+  int width = str.length() * FONT_WIDTH;
+  width = width / 2 + 10;
+
+  u8g2.setDrawColor(1);  // xor
+  u8g2.drawBox(DISP_WIDTH / 2 - width - 1, DISP_HEIGHT / 2 - fontHeight - 1,
+               width * 2 + 2, fontHeight * 2 + 2);
+  u8g2.setDrawColor(0);  // xor
+  u8g2.drawBox(DISP_WIDTH / 2 - width, DISP_HEIGHT / 2 - fontHeight,
+               width * 2, fontHeight * 2);
+
+  u8g2.setCursor(DISP_WIDTH / 2 - width + 10, DISP_HEIGHT / 2 + fontHeight / 2 - 1);
+  u8g2.setDrawColor(1);
+  u8g2.print(str);
+  u8g2.sendBuffer();  // transfer internal memory to the display
 }
 
 void dispClear(void) {
@@ -634,14 +666,12 @@ void loopESP32() {
   char key;
   boolean dispFlag = false;
   boolean shift = false;
+  static unsigned long lastExec = millis(); // sleep timer
 
   keyRaw = keyCheck();
-  if (keyRaw.shift) {
+  if (keyRaw.shift) {  // shift key is regarded caps in calc mode
     keyRaw.shift = false;
     keyRaw.caps = true;
-  }
-  if (keyRaw.caps) {
-    shift = true;
   }
   key = keyChar(keyRaw);
 
@@ -665,13 +695,10 @@ void loopESP32() {
         }
         break;
       case 2:  // deg
-        if (shift) {
-          degree = false;
-          messageBox("radian mode");
-        } else {
-          degree = true;
-          messageBox("degree mode");
-        }
+        degree = !degree;
+        messageBox(degree ? "degree mode" : "radian mode");
+        delay(1000);
+        update_display();
         break;
       case 3:  // x^2
         enter();
@@ -699,12 +726,15 @@ void loopESP32() {
           push(log10(pop()));
         break;
     }
+    lastExec = millis();
     update_display();
     waitRelease();
   } else if (keyRaw.row == 9) {
     switch (keyRaw.clm) {
       case 0:  // npr
+        break;
       case 1:  // 2nd-f
+        break;
       case 2:  // sin
         enter();
         backup();
@@ -756,10 +786,27 @@ void loopESP32() {
         pop();
         break;
     }
+    lastExec = millis();
     update_display();
     waitRelease();
   } else {
-    if (key == 0) {
+    if (key == 0) {                                                               // no key press : sleep
+      if ((keyRaw.row == 2 && keyRaw.clm == 0) || lastExec + 30000 < millis()) {  // OFF key or 30sec untouched
+        turnOffDisplay();
+        esp_sleep_enable_timer_wakeup(300000);  // 0.3sec
+        for (;;) {
+          esp_light_sleep_start();
+          keyRaw = keyCheck();
+          if (keyRaw.row >= 0 || keyRaw.shift || keyRaw.caps || keyRaw.ctrl)  // any key
+            break;
+        }
+        lastExec = millis();
+        cursorOff = false;
+        update_display();                        // display turn on
+      } else if (lastExec + 10000 < millis()) {  // untouch for 10sec
+        esp_sleep_enable_timer_wakeup(50000);  // 50msec nap
+        esp_light_sleep_start();
+      }
       return;
     }
     switch (key) {
@@ -863,6 +910,7 @@ void loopESP32() {
         break;
     }
   }
+  lastExec = millis();
   update_display();
 }
 
@@ -878,7 +926,7 @@ void setup() {
 
   SPI.begin(MY_SCK, MY_MISO, MY_MOSI, MY_SS);
   u8g2.begin();
-  u8g2.enableUTF8Print(); 
+  u8g2.enableUTF8Print();
   u8g2.setFontMode(1);
   u8g2.setDrawColor(1);
 
@@ -902,8 +950,8 @@ void setup() {
     u8g2.setFont(FONT_TERM);  // choose a suitable font
     fontHeight = FONT_TERM_HEIGHT;
     resetDisplaySetting();
-    showString("Raspberry Pi OS mode\n");
-    refleshDisplay();
+    messageBox("Raspberry Pi OS mode\n");
+    delay(1000);
   } else {
     u8g2.setFont(FONT_CALC);  // choose a suitable font
     fontHeight = FONT_CALC_HEIGHT;
