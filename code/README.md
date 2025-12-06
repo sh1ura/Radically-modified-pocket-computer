@@ -49,3 +49,9 @@ ESP32 で以下のことを行うコードです。非常に荒っぽい、汚�
 ### なお、Raspberry Pi Zero 2W 側はプログラミング不要です。
 
 * [設定画面（GUI の「設定」、または CLI の raspi-config）で、シリアルポート有効、シリアルコンソール有効にセット](https://toki-blog.com/pi-serial/)してください。GPIO14/15 (TXD/RXD) からシリアル通信でログインできるようになります（起動時・シャットダウン時のメッセージも表示されます）。
+
+## 依存ライブラリ
+
+* [u8g2](https://github.com/olikraus/u8g2)
+* [ESP32-BLE-Keyboard](https://github.com/JuniorPolegato/ESP32-BLE-Keyboard)
+  - 必ず、BleKeyboard.h 冒頭の `#undef USE_NIMBLE` を `#define USE_NIMBLE` に変更してください
